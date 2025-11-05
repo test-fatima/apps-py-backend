@@ -1,15 +1,41 @@
-name: Main Pipeline
+name: Aqua Scan - Reproduce Undefined Issue
 
 on:
+  workflow_dispatch:  # allows manual triggering
   push:
     branches: [ main ]
 
 jobs:
   aqua_scan:
-    uses: test-fatima/shared-aqua-scan-component/.github/workflows/trivy-scan.yml@main
-    with:
-      repo_name: "apps/py-backend"
-      repo_url: "https://github.com/test-fatima/apps-py-backend"
-    secrets:
-      AQUA_API_KEY: ${{ secrets.AQUA_API_KEY }}
-      AQUA_API_SECRET: ${{ secrets.AQUA_API_SECRET }}
+    name: Run Aqua Scanner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Aqua scanner
+        uses: docker://aquasec/aqua-scanner
+        with:
+          args: trivy fs --scanners misconfig,vuln,secret . --format=json --output=trivy-results.json
+        env:
+          AQUA_KEY: ${{ secrets.AQUA_KEY }}
+          AQUA_SECRET: ${{ secrets.AQUA_SECRET }}
+          TRIVY_RUN_AS_PLUGIN: 'aqua'
+          OVERRIDE_REPOSITORY_NAME: 'apps/py-backend'
+          OVERRIDE_REPOSITORY: 'https://github.com/test-fatima/apps-py-backend'
+          OVERRIDE_REPOSITORY_SOURCE: 'GitHub'
+          OVERRIDE_BUILDSYSTEM: 'GitHub Actions'
+          AQUA_URL: 'https://api.dev.supply-chain.cloud.aquasec.com'
+          CSPM_URL: 'https://stage.api.cloudsploit.com'
+
+      - name: Display scan results
+        run: |
+          echo "=== SCAN RESULTS ==="
+          if [ -f trivy-results.json ]; then
+            cat trivy-results.json
+          else
+            echo "No scan results generated"
+          fi
