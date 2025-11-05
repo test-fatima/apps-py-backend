@@ -1,0 +1,15 @@
+name: Main Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  aqua_scan:
+    uses: shared/aqua-scan-component/.github/workflows/trivy-scan.yml@main
+    with:
+      repo_name: "apps/py-backend"
+      repo_url: "https://github.com/apps/py-backend"
+    secrets:
+      AQUA_API_KEY: ${{ secrets.AQUA_API_KEY }}
+      AQUA_API_SECRET: ${{ secrets.AQUA_API_SECRET }}
